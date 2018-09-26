@@ -1,2 +1,17 @@
-# react-availability-calendar
-Inspired by Talent.io's availability calendar, I made my own
+# Availability Calendar
+
+### Install dependencies
+```
+yarn
+```
+
+### Running
+```
+yarn start
+```
+
+### Testing
+```
+yarn test
+```
+
