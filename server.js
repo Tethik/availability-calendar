@@ -1,27 +1,37 @@
-var express = require('express')
-const NodeCache = require("node-cache");
+const express = require('express');
+const wrap = require('express-async-error-wrapper');
+const NodeCache = require('node-cache');
+const {
+  writeAvailabilityCalendar,
+  getAvailabilityCalendar,
+} = require('./storage');
 
-var app = express()
+const app = express();
 const storage = new NodeCache();
 
-app.use(express.static('frontend/build'))
+app.use(express.static('frontend/build'));
 app.use(express.json());
 
-app.get('/api/calendar/:calendarId', (req, res) => {
+app.get(
+  '/api/calendar/:calendarId',
+  wrap(async (req, res) => {
     const { calendarId } = req.params;
-    storage.get(calendarId, (err, val) => {
-        console.log(val);
-        res.json(val || [])
-    });
-});
+    const calendar = await getAvailabilityCalendar(calendarId);
+    console.log(`Get ${calendar.id}`);
+    res.json(calendar);
+  }),
+);
 
-app.post('/api/calendar/:calendarId', (req, res, next) => {
-    const { calendarId } = req.params;
-    storage.set(calendarId, req.body, (err, val) => {
-        if (err) { next(err); return; }
-        res.json(req.body)
-    });
-})
+app.put(
+  '/api/calendar',
+  wrap(async (req, res) => {
+    const calendar = await writeAvailabilityCalendar(req.body);
+    console.log(`Put ${calendar.id}`);
+    res.json(calendar);
+  }),
+);
 
-console.log("Starting on port 4000");
-app.listen(4000)
+app.err;
+
+console.log('Starting on port 4000');
+app.listen(4000);

@@ -1,28 +1,27 @@
-import React, { Component } from "react";
-import Calendar from "react-big-calendar";
-import moment from "moment";
-import { saveEvents } from "./api";
+import React, { Component } from 'react';
+import Calendar from 'react-big-calendar';
+import moment from 'moment';
+import { saveEvents } from './api';
 
-import "./App.css";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import logo from "./logo.svg";
+import './App.css';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import logo from './logo.svg';
 
 Calendar.setLocalizer(Calendar.momentLocalizer(moment));
-
 
 class App extends Component {
   constructor(props) {
     super(props);
 
-    this.state = { events: props.events };
+    this.state = { events: props.calendar.dates };
     console.log(this.state);
   }
 
   state = {
-    events: []
+    events: [],
   };
 
-  mergeEvents = (events) => {
+  mergeEvents = events => {
     // Would use yield here, but javascript is just a bit weird in that syntax :S
     // maybe later.
 
@@ -39,9 +38,10 @@ class App extends Component {
       mergedEvents.push(event);
     }
     return mergedEvents;
-  }
+  };
 
-  mergeEventPair = (left, right) => this.createEvent(left.start, left.end > right.end ? left.end : right.end);
+  mergeEventPair = (left, right) =>
+    this.createEvent(left.start, left.end > right.end ? left.end : right.end);
 
   createEvent = (start, end) => ({ start, end, title: 'Available' });
 
@@ -74,22 +74,28 @@ class App extends Component {
       newEvents.push(this.createEvent(start, end));
     }
 
-    console.log("After insert", newEvents);
+    console.log('After insert', newEvents);
 
     newEvents.sort((a, b) => a.start - b.start);
-    console.log("After sort", newEvents);
+    console.log('After sort', newEvents);
 
     const mergedEvents = this.mergeEvents(newEvents);
-    console.log("After merge", mergedEvents);
+    console.log('After merge', mergedEvents);
 
-    const savedEvents = await saveEvents("123456", mergedEvents);
+    const savedEvents = await saveEvents({
+      id: '129d53fa-cb77-4850-9a76-42d9cee1f523',
+      dates: mergedEvents,
+    });
 
     this.setState({
-      events: savedEvents
-    })
-  }
+      events: savedEvents.dates,
+    });
+  };
 
   render() {
+    const formats = {
+      selectRangeFormat: '8:00am — 2:00pm',
+    };
     return (
       <div className="App">
         <header className="App-header">
@@ -101,8 +107,11 @@ class App extends Component {
           defaultDate={new Date()}
           defaultView={Calendar.Views.WEEK}
           events={this.state.events}
-          style={{ height: "100vh" }}
+          style={{ height: '100vh' }}
           onSelectSlot={this.handleSelect}
+          views={['week']}
+          toolbar={false}
+          formats={formats}
         />
       </div>
     );
