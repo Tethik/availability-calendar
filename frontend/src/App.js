@@ -1,121 +1,138 @@
 import React, { Component } from 'react';
-import Calendar from 'react-big-calendar';
-import moment from 'moment';
-import { saveEvents } from './api';
+import { Navbar, Button } from 'react-bootstrap';
+import { Route, Link } from 'react-router-dom';
+import { getEvents } from './api';
+import Callback from './Callback/Callback';
+import Home from './Home/Home';
+import Profile from './Profile/Profile';
 
-import './App.css';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import logo from './logo.svg';
+const Topic = ({ match }) => (
+  <div>
+    <h3>{match.params.topicId}</h3>
+  </div>
+);
 
-Calendar.setLocalizer(Calendar.momentLocalizer(moment));
+const Topics = ({ match }) => (
+  <div>
+    <h2>Topics</h2>
+    <ul>
+      <li>
+        <Link to={`${match.url}/rendering`}>Rendering with React</Link>
+      </li>
+      <li>
+        <Link to={`${match.url}/components`}>Components</Link>
+      </li>
+      <li>
+        <Link to={`${match.url}/props-v-state`}>Props v. State</Link>
+      </li>
+    </ul>
+
+    <Route path={`${match.path}/:topicId`} component={Topic} />
+    <Route
+      exact
+      path={match.path}
+      render={() => <h3>Please select a topic.</h3>}
+    />
+  </div>
+);
 
 class App extends Component {
   constructor(props) {
     super(props);
-
-    this.state = { events: props.calendar.dates };
-    console.log(this.state);
+    console.log(props);
   }
 
-  state = {
-    events: [],
+  goTo(route) {
+    this.props.history.replace(`/${route}`);
+  }
+
+  login = () => {
+    this.props.auth.login();
   };
 
-  mergeEvents = events => {
-    // Would use yield here, but javascript is just a bit weird in that syntax :S
-    // maybe later.
-
-    const mergedEvents = [];
-    // merge events
-    for (var i = 0; i < events.length; i += 1) {
-      let event = events[i];
-      while (i < events.length - 1) {
-        const nextEvent = events[i + 1];
-        if (nextEvent.start > event.end) break;
-        event = this.mergeEventPair(event, nextEvent);
-        i += 1;
-      }
-      mergedEvents.push(event);
-    }
-    return mergedEvents;
-  };
-
-  mergeEventPair = (left, right) =>
-    this.createEvent(left.start, left.end > right.end ? left.end : right.end);
-
-  createEvent = (start, end) => ({ start, end, title: 'Available' });
-
-  handleSelect = async ({ start, end }) => {
-    const { events } = this.state;
-
-    // Only remove if completely inside existing event.
-    // Naive algorithm here for prototyping. Probably better with log n search.
-    // But eh.. guesstimating <100 events here.
-    const newEvents = [];
-
-    let wasCut = false;
-    for (var i = 0; i < events.length; i += 1) {
-      const event = events[i];
-
-      // Old event completely covers new event, cut old event where we "deselected"
-      if (start >= event.start && end <= event.end) {
-        if (start > event.start && end < event.end) {
-          newEvents.push(this.createEvent(event.start, start));
-          newEvents.push(this.createEvent(end, event.end));
-        }
-        wasCut = true;
-      } else {
-        newEvents.push(event);
-      }
-    }
-
-    if (!wasCut) {
-      // Add new availability, might need to merge with existing events.
-      newEvents.push(this.createEvent(start, end));
-    }
-
-    console.log('After insert', newEvents);
-
-    newEvents.sort((a, b) => a.start - b.start);
-    console.log('After sort', newEvents);
-
-    const mergedEvents = this.mergeEvents(newEvents);
-    console.log('After merge', mergedEvents);
-
-    const savedEvents = await saveEvents({
-      id: '129d53fa-cb77-4850-9a76-42d9cee1f523',
-      dates: mergedEvents,
-    });
-
-    this.setState({
-      events: savedEvents.dates,
-    });
+  logout = () => {
+    this.props.auth.logout();
   };
 
   render() {
-    const formats = {
-      selectRangeFormat: '8:00am — 2:00pm',
-    };
+    const { isAuthenticated } = this.props.auth;
+
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <Calendar
-          selectable
-          defaultDate={new Date()}
-          defaultView={Calendar.Views.WEEK}
-          events={this.state.events}
-          style={{ height: '100vh' }}
-          onSelectSlot={this.handleSelect}
-          views={['week']}
-          toolbar={false}
-          formats={formats}
-        />
+      <div>
+        <Navbar fluid>
+          <Navbar.Header>
+            <Navbar.Brand>
+              <a href="#">Auth0 - React</a>
+            </Navbar.Brand>
+            <Button
+              bsStyle="primary"
+              className="btn-margin"
+              onClick={this.goTo.bind(this, 'home')}
+            >
+              Home
+            </Button>
+            {!isAuthenticated() && (
+              <Button
+                bsStyle="primary"
+                className="btn-margin"
+                onClick={this.login.bind(this)}
+              >
+                Log In
+              </Button>
+            )}
+            {isAuthenticated() && (
+              <Button
+                bsStyle="primary"
+                className="btn-margin"
+                onClick={this.logout.bind(this)}
+              >
+                Log Out
+              </Button>
+            )}
+          </Navbar.Header>
+        </Navbar>
+        <div>
+          <h1>Hello</h1>
+          <ul>
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            {isAuthenticated() && (
+              <li>
+                <Link to="/availability/129d53fa-cb77-4850-9a76-42d9cee1f523">
+                  Calendar
+                </Link>
+              </li>
+            )}
+            {isAuthenticated() && (
+              <li>
+                <Link to="/topics">Topics</Link>
+              </li>
+            )}
+            {isAuthenticated() && (
+              <li>
+                <Link to="/profile">Profile</Link>
+              </li>
+            )}
+          </ul>
+
+          <hr />
+
+          <Route
+            exact
+            path="/"
+            render={props => <Home auth={this.props.auth} {...props} />}
+          />
+          <Route
+            exact
+            path="/profile"
+            render={props => <Profile auth={this.props.auth} {...props} />}
+          />
+          <Route exact path="/login" component={this.login} />
+          <Route path="/topics" component={Topics} />
+        </div>
       </div>
     );
   }
 }
-
 export default App;
