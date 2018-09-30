@@ -1,12 +1,23 @@
 {
   "dependencies": {
+    "auth0-js": "^9.8.0",
     "aws-sdk": "^2.325.0",
+    "dotenv": "^6.0.0",
     "express": "^4.16.3",
     "express-async-error-wrapper": "^1.0.3",
-    "node-cache": "^4.2.0",
+    "express-jwt": "^5.3.1",
+    "jwks-rsa": "^1.3.0",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
+    "concurrently": "^4.0.1",
     "nodemon": "^1.18.4"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "watch": "nodemon src/server.js",
+    "debug": "npm run build && npm run watch-debug",
+    "serve-debug": "nodemon --inspect dist/server.js",
+    "watch-debug": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run serve-debug\""
   }
 }

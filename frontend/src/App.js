@@ -1,47 +1,14 @@
 import React, { Component } from 'react';
-import { Navbar, Button } from 'react-bootstrap';
+import { Navbar, Nav, NavItem, Button } from 'react-bootstrap';
 import { Route, Link } from 'react-router-dom';
-import { getEvents } from './api';
-import Callback from './Callback/Callback';
 import Home from './Home/Home';
 import Profile from './Profile/Profile';
-
-const Topic = ({ match }) => (
-  <div>
-    <h3>{match.params.topicId}</h3>
-  </div>
-);
-
-const Topics = ({ match }) => (
-  <div>
-    <h2>Topics</h2>
-    <ul>
-      <li>
-        <Link to={`${match.url}/rendering`}>Rendering with React</Link>
-      </li>
-      <li>
-        <Link to={`${match.url}/components`}>Components</Link>
-      </li>
-      <li>
-        <Link to={`${match.url}/props-v-state`}>Props v. State</Link>
-      </li>
-    </ul>
-
-    <Route path={`${match.path}/:topicId`} component={Topic} />
-    <Route
-      exact
-      path={match.path}
-      render={() => <h3>Please select a topic.</h3>}
-    />
-  </div>
-);
+import AvailabilityCalendar from './AvailabilityCalendar/AvailabilityCalendar';
+import Topics from './Topics/Topics';
+import Candidates from './Candidates/Candidates';
+import 'bootstrap/dist/css/bootstrap.css';
 
 class App extends Component {
-  constructor(props) {
-    super(props);
-    console.log(props);
-  }
-
   goTo(route) {
     this.props.history.replace(`/${route}`);
   }
@@ -59,65 +26,50 @@ class App extends Component {
 
     return (
       <div>
-        <Navbar fluid>
+        <Navbar inverse>
           <Navbar.Header>
             <Navbar.Brand>
-              <a href="#">Auth0 - React</a>
+              <a href="/">WhenCanYouChat?</a>
             </Navbar.Brand>
+          </Navbar.Header>
+          <Nav>
+            {isAuthenticated() && (
+              <NavItem eventKey={1} href="#">
+                <Link to="/candidates">Candidates</Link>
+              </NavItem>
+            )}
+            {isAuthenticated() && (
+              <NavItem eventKey={2} href="#">
+                <Link to="/topics">Topics</Link>
+              </NavItem>
+            )}
+            {isAuthenticated() && (
+              <NavItem>
+                <Link to="/profile">Profile</Link>
+              </NavItem>
+            )}
+          </Nav>
+        </Navbar>
+        <div className="container">
+          {!isAuthenticated() && (
             <Button
               bsStyle="primary"
               className="btn-margin"
-              onClick={this.goTo.bind(this, 'home')}
+              onClick={this.login.bind(this)}
             >
-              Home
+              Log In
             </Button>
-            {!isAuthenticated() && (
-              <Button
-                bsStyle="primary"
-                className="btn-margin"
-                onClick={this.login.bind(this)}
-              >
-                Log In
-              </Button>
-            )}
-            {isAuthenticated() && (
-              <Button
-                bsStyle="primary"
-                className="btn-margin"
-                onClick={this.logout.bind(this)}
-              >
-                Log Out
-              </Button>
-            )}
-          </Navbar.Header>
-        </Navbar>
-        <div>
-          <h1>Hello</h1>
-          <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            {isAuthenticated() && (
-              <li>
-                <Link to="/availability/129d53fa-cb77-4850-9a76-42d9cee1f523">
-                  Calendar
-                </Link>
-              </li>
-            )}
-            {isAuthenticated() && (
-              <li>
-                <Link to="/topics">Topics</Link>
-              </li>
-            )}
-            {isAuthenticated() && (
-              <li>
-                <Link to="/profile">Profile</Link>
-              </li>
-            )}
-          </ul>
-
-          <hr />
-
+          )}
+          {isAuthenticated() && (
+            <Button
+              bsStyle="primary"
+              className="btn-margin"
+              onClick={this.logout.bind(this)}
+            >
+              Log Out
+            </Button>
+          )}
+          <br />
           <Route
             exact
             path="/"
@@ -127,6 +79,17 @@ class App extends Component {
             exact
             path="/profile"
             render={props => <Profile auth={this.props.auth} {...props} />}
+          />
+          <Route
+            exact
+            path="/candidates"
+            render={props => <Candidates auth={this.props.auth} {...props} />}
+          />
+          <Route
+            path="/availability/:calendarId"
+            component={props => (
+              <AvailabilityCalendar auth={this.props.auth} {...props} />
+            )}
           />
           <Route exact path="/login" component={this.login} />
           <Route path="/topics" component={Topics} />

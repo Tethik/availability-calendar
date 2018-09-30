@@ -12,6 +12,7 @@ const DYNAMO_DB_TABLE_NAME = 'availability-calendar';
 async function writeAvailabilityCalendar(calendar) {
   if (!calendar.id) {
     calendar.id = uuidv4();
+    calendar.anonymousAccessToken = uuidv4();
   }
   const params = {
     TableName: DYNAMO_DB_TABLE_NAME,
@@ -28,9 +29,26 @@ async function getAvailabilityCalendar(calendarId) {
     .promise()).Item;
 }
 
+async function listAvailabilityCalendar(ownerId) {
+  return (await docClient
+    .scan({ TableName: DYNAMO_DB_TABLE_NAME, Key: { ownerId } })
+    .promise()).Items;
+}
+
+async function getAvailabilityCalendarByAccessToken(anonymousAccessToken) {
+  return (await docClient
+    .get({
+      TableName: DYNAMO_DB_TABLE_NAME,
+      Key: { anonymousAccessToken },
+    })
+    .promise()).Item;
+}
+
 module.exports = {
   writeAvailabilityCalendar,
   getAvailabilityCalendar,
+  getAvailabilityCalendarByAccessToken,
+  listAvailabilityCalendar,
 };
 
 // async function main() {

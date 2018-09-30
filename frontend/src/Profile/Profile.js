@@ -24,7 +24,7 @@ class Profile extends Component {
             <img src={profile.picture} alt="profile" />
             <div>
               <ControlLabel>
-                <Glyphicon glyph="user" /> Nickname
+                <Glyphicon glyph="user" />
               </ControlLabel>
               <h3>{profile.nickname}</h3>
             </div>

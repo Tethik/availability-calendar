@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
 import Calendar from 'react-big-calendar';
 import moment from 'moment';
-import { getEvents, saveEvents } from './api';
+import CalendarAPI from '../api/calendar';
 
 import './App.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import logo from './logo.svg';
 
 Calendar.setLocalizer(Calendar.momentLocalizer(moment));
 
@@ -24,7 +23,8 @@ class AvailabilityCalendar extends Component {
   }
 
   async load() {
-    const calendar = await getEvents(this.state.calendarId);
+    const api = new CalendarAPI(this.props.auth);
+    const calendar = await api.get(this.state.calendarId);
     this.setState({ events: calendar.dates });
   }
 
@@ -93,7 +93,8 @@ class AvailabilityCalendar extends Component {
     const mergedEvents = this.mergeEvents(newEvents);
     console.log('After merge', mergedEvents);
 
-    const savedEvents = await saveEvents({
+    const api = new CalendarAPI(this.props.auth);
+    const savedEvents = await api.save({
       id: this.state.calendarId,
       dates: mergedEvents,
     });
@@ -116,7 +117,7 @@ class AvailabilityCalendar extends Component {
           events={this.state.events}
           style={{ height: '100vh' }}
           onSelectSlot={this.handleSelect}
-          views={['week']}
+          // views={['week']}
         />
       </div>
     );
