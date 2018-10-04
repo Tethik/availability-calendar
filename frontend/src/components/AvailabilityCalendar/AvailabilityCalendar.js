@@ -9,15 +9,6 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 Calendar.setLocalizer(Calendar.momentLocalizer(moment));
 
 class AvailabilityCalendar extends Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      calendarId: props.match.params.calendarId,
-      events: [],
-    };
-  }
-
   componentDidMount() {
     this.load();
   }
@@ -117,7 +108,6 @@ class AvailabilityCalendar extends Component {
           events={this.state.events}
           style={{ height: '100vh' }}
           onSelectSlot={this.handleSelect}
-          // views={['week']}
         />
       </div>
     );

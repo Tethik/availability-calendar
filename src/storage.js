@@ -10,6 +10,7 @@ const docClient = new AWS.DynamoDB.DocumentClient();
 const DYNAMO_DB_TABLE_NAME = 'availability-calendar';
 
 async function writeAvailabilityCalendar(calendar) {
+  delete calendar.timezone;
   if (!calendar.id) {
     calendar.id = uuidv4();
     calendar.anonymousAccessToken = uuidv4();
@@ -18,6 +19,8 @@ async function writeAvailabilityCalendar(calendar) {
     TableName: DYNAMO_DB_TABLE_NAME,
     Item: calendar,
   };
+
+  console.log(calendar);
 
   await docClient.put(params).promise();
   return calendar;
@@ -35,6 +38,12 @@ async function listAvailabilityCalendar(ownerId) {
     .promise()).Items;
 }
 
+async function deleteAvailabilityCalendar(calendarId) {
+  return (await docClient
+    .delete({ TableName: DYNAMO_DB_TABLE_NAME, Key: { id: calendarId } })
+    .promise()).Attributes;
+}
+
 async function getAvailabilityCalendarByAccessToken(anonymousAccessToken) {
   return (await docClient
     .get({
@@ -49,6 +58,7 @@ module.exports = {
   getAvailabilityCalendar,
   getAvailabilityCalendarByAccessToken,
   listAvailabilityCalendar,
+  deleteAvailabilityCalendar,
 };
 
 // async function main() {

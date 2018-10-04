@@ -29,16 +29,27 @@ export default class Candidates extends Component {
     this.setState({ ...this.state, showForm });
   };
 
+  handleSaveForm = async candidate => {
+    const api = new CalendarAPI(this.props.auth);
+    await api.save(candidate);
+    this.setState({ ...this.state, showForm: false });
+    this.load();
+  };
+
   render() {
     return (
       <div>
-        <Form show={this.state.showForm} onHide={this.handleShowForm(false)} />
+        <Form
+          show={this.state.showForm}
+          onSave={this.handleSaveForm}
+          onHide={this.handleShowForm(false)}
+        />
 
         <div>
           <Button onClick={this.handleShowForm(true)}>New candidate</Button>
         </div>
 
-        {/* <List candidates={this.state.candidates} /> */}
+        <List candidates={this.state.candidates} />
       </div>
     );
   }

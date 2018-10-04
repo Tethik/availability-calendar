@@ -6,6 +6,7 @@ const {
   writeAvailabilityCalendar,
   getAvailabilityCalendar,
   getAvailabilityCalendarByAccessToken,
+  deleteAvailabilityCalendar,
   listAvailabilityCalendar,
 } = require('./storage');
 
@@ -32,9 +33,7 @@ authorizedRouter.use(jwtCheck);
 authorizedRouter.get(
   '/api/candidate',
   wrap(async (req, res) => {
-    console.log(req.user);
-    const calendar = await listAvailabilityCalendar(req.user.id);
-    console.log(`Get ${calendar.id}`);
+    const calendar = await listAvailabilityCalendar(req.user.sub);
     res.json(calendar);
   }),
 );
@@ -49,12 +48,34 @@ authorizedRouter.get(
   }),
 );
 
+authorizedRouter.post(
+  '/api/candidate',
+  wrap(async (req, res) => {
+    const candidate = req.body;
+    candidate.ownerId = req.user.sub;
+    const calendar = await writeAvailabilityCalendar(candidate);
+    console.log(`Post ${calendar.id}`);
+    res.json(calendar);
+  }),
+);
+
 authorizedRouter.put(
   '/api/candidate/:calendarId',
   wrap(async (req, res) => {
     const { calendarId } = req.params;
+    req.body.id = calendarId;
     const calendar = await writeAvailabilityCalendar(req.body);
     console.log(`Put ${calendar.id}`);
+    res.json(calendar);
+  }),
+);
+
+authorizedRouter.delete(
+  '/api/candidate/:calendarId',
+  wrap(async (req, res) => {
+    const { calendarId } = req.params;
+    const calendar = await deleteAvailabilityCalendar(calendarId);
+    console.log(`Delete ${calendar.id}`);
     res.json(calendar);
   }),
 );

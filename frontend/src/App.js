@@ -6,6 +6,8 @@ import Profile from './Profile/Profile';
 import AvailabilityCalendar from './AvailabilityCalendar/AvailabilityCalendar';
 import Topics from './Topics/Topics';
 import Candidates from './Candidates/Candidates';
+import Candidate from './Candidates/Candidate';
+
 import 'bootstrap/dist/css/bootstrap.css';
 
 class App extends Component {
@@ -90,6 +92,10 @@ class App extends Component {
             component={props => (
               <AvailabilityCalendar auth={this.props.auth} {...props} />
             )}
+          />
+          <Route
+            path="/candidate/:candidateId"
+            component={props => <Candidate {...this.props} {...props} />}
           />
           <Route exact path="/login" component={this.login} />
           <Route path="/topics" component={Topics} />

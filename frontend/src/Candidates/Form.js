@@ -17,6 +17,7 @@ export default class Form extends Component {
       value: {
         name: '',
         timezone: '',
+        dates: [],
       },
     };
   }
@@ -34,6 +35,10 @@ export default class Form extends Component {
     value.name = e.target.value;
     this.setState({ value });
   }
+
+  handleSave = () => {
+    if (this.props.onSave) this.props.onSave(this.state.value);
+  };
 
   handleClose = e => {
     if (this.props.onHide) this.props.onHide();
@@ -56,7 +61,7 @@ export default class Form extends Component {
             controlId="formBasicText"
             validationState={this.getValidationState()}
           >
-            <ControlLabel>Name</ControlLabel>
+            <ControlLabel>Candidate Name</ControlLabel>
             <FormControl
               type="text"
               value={this.state.value.name}
@@ -69,7 +74,9 @@ export default class Form extends Component {
 
         <Modal.Footer>
           <Button onClick={this.handleClose}>Close</Button>
-          <Button bsStyle="primary">Create</Button>
+          <Button bsStyle="primary" onClick={this.handleSave}>
+            Create
+          </Button>
         </Modal.Footer>
       </Modal>
     );

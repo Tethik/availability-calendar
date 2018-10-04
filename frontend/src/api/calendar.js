@@ -1,9 +1,11 @@
 import moment from 'moment';
 
-const parseDates = result =>
-  result.map(({ start, end, title }) => {
+const parseDates = dates => {
+  if (!dates) return [];
+  return dates.map(({ start, end, title }) => {
     return { start: moment(start).toDate(), end: moment(end).toDate(), title };
   });
+};
 
 export default class CalendarAPI {
   constructor(auth) {
@@ -19,8 +21,8 @@ export default class CalendarAPI {
   }
 
   async save(calendar) {
-    const res = await fetch(`/api/calendar`, {
-      method: 'put',
+    const res = await fetch(`/api/candidate`, {
+      method: 'post',
       headers: this.headers,
       body: JSON.stringify(calendar),
     });
@@ -35,7 +37,9 @@ export default class CalendarAPI {
       headers: this.headers,
     });
     const result = await res.json();
+
     result.dates = parseDates(result.dates);
+
     return result;
   }
 
