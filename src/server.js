@@ -3,16 +3,17 @@ const wrap = require('express-async-error-wrapper');
 const jwt = require('express-jwt');
 const jwks = require('jwks-rsa');
 const {
-  writeAvailabilityCalendar,
-  getAvailabilityCalendar,
+  putCandidate,
+  getCandidate,
   getAvailabilityCalendarByAccessToken,
-  deleteAvailabilityCalendar,
-  listAvailabilityCalendar,
+  deleteCandidate,
+  listCandidates,
 } = require('./storage');
+require('dotenv').config();
 
 const app = express();
 
-const jwtCheck = jwt({
+const jwtOptions = {
   secret: jwks.expressJwtSecret({
     cache: true,
     rateLimit: true,
@@ -22,7 +23,14 @@ const jwtCheck = jwt({
   audience: 'http://localhost:3000/api/',
   issuer: 'https://when-can-you.eu.auth0.com/',
   algorithms: ['RS256'],
-});
+};
+
+if (process.env['DISABLE_JWT_EXPIRY']) {
+  console.log('WARNING: set clockTimeStamp to 0');
+  jwtOptions.clockTimestamp = 1;
+}
+
+let jwtCheck = jwt(jwtOptions);
 
 app.use(express.static('frontend/build'));
 app.use(express.json());
@@ -33,7 +41,7 @@ authorizedRouter.use(jwtCheck);
 authorizedRouter.get(
   '/api/candidate',
   wrap(async (req, res) => {
-    const calendar = await listAvailabilityCalendar(req.user.sub);
+    const calendar = await listCandidates(req.user.sub);
     res.json(calendar);
   }),
 );
@@ -42,7 +50,8 @@ authorizedRouter.get(
   '/api/candidate/:calendarId',
   wrap(async (req, res) => {
     const { calendarId } = req.params;
-    const calendar = await getAvailabilityCalendar(calendarId);
+    const ownerId = req.user.sub;
+    const calendar = await getCandidate(ownerId, calendarId);
     console.log(`Get ${calendar.id}`);
     res.json(calendar);
   }),
@@ -52,8 +61,8 @@ authorizedRouter.post(
   '/api/candidate',
   wrap(async (req, res) => {
     const candidate = req.body;
-    candidate.ownerId = req.user.sub;
-    const calendar = await writeAvailabilityCalendar(candidate);
+    const ownerId = req.user.sub;
+    const calendar = await putCandidate(ownerId, candidate);
     console.log(`Post ${calendar.id}`);
     res.json(calendar);
   }),
@@ -64,7 +73,8 @@ authorizedRouter.put(
   wrap(async (req, res) => {
     const { calendarId } = req.params;
     req.body.id = calendarId;
-    const calendar = await writeAvailabilityCalendar(req.body);
+    const ownerId = req.user.sub;
+    const calendar = await putCandidate(ownerId, req.body);
     console.log(`Put ${calendar.id}`);
     res.json(calendar);
   }),
@@ -74,7 +84,8 @@ authorizedRouter.delete(
   '/api/candidate/:calendarId',
   wrap(async (req, res) => {
     const { calendarId } = req.params;
-    const calendar = await deleteAvailabilityCalendar(calendarId);
+    const ownerId = req.user.sub;
+    const calendar = await deleteCandidate(ownerId, calendarId);
     console.log(`Delete ${calendar.id}`);
     res.json(calendar);
   }),
@@ -115,7 +126,7 @@ app.put(
     }
     calendar.dates = changedCalendar.dates;
 
-    calendar = await writeAvailabilityCalendar(calendar);
+    calendar = await putCandidate(calendar.ownerId, calendar);
 
     console.log(`Anon Update ${calendar.id}`);
     res.json(calendar);
