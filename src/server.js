@@ -2,13 +2,8 @@ const express = require('express');
 const wrap = require('express-async-error-wrapper');
 const jwt = require('express-jwt');
 const jwks = require('jwks-rsa');
-const {
-  putCandidate,
-  getCandidate,
-  getAvailabilityCalendarByAccessToken,
-  deleteCandidate,
-  listCandidates,
-} = require('./storage');
+const calendarStore = require('./storage/calendar');
+const candidateStore = require('./storage/candidate');
 require('dotenv').config();
 
 const app = express();
@@ -41,53 +36,72 @@ authorizedRouter.use(jwtCheck);
 authorizedRouter.get(
   '/api/candidate',
   wrap(async (req, res) => {
-    const calendar = await listCandidates(req.user.sub);
-    res.json(calendar);
-  }),
-);
-
-authorizedRouter.get(
-  '/api/candidate/:calendarId',
-  wrap(async (req, res) => {
-    const { calendarId } = req.params;
-    const ownerId = req.user.sub;
-    const calendar = await getCandidate(ownerId, calendarId);
-    console.log(`Get ${calendar.id}`);
-    res.json(calendar);
+    const candidates = await candidateStore.scan({ ownerId: req.user.sub });
+    res.json(candidates);
   }),
 );
 
 authorizedRouter.post(
   '/api/candidate',
   wrap(async (req, res) => {
-    const candidate = req.body;
-    const ownerId = req.user.sub;
-    const calendar = await putCandidate(ownerId, candidate);
-    console.log(`Post ${calendar.id}`);
-    res.json(calendar);
+    let candidate = req.body;
+    candidate.ownerId = req.user.sub;
+    candidate = await candidateStore.create(candidate);
+    console.log(`Created candidate ${candidate.id}`);
+    res.json(candidate);
   }),
 );
 
-authorizedRouter.put(
-  '/api/candidate/:calendarId',
+authorizedRouter.get(
+  '/api/candidate/:candidateId',
   wrap(async (req, res) => {
-    const { calendarId } = req.params;
-    req.body.id = calendarId;
+    const { candidateId } = req.params;
     const ownerId = req.user.sub;
-    const calendar = await putCandidate(ownerId, req.body);
-    console.log(`Put ${calendar.id}`);
-    res.json(calendar);
+    const candidate = await candidateStore.get({ id: candidateId, ownerId });
+    if (!candidate) {
+      res.status(404);
+      res.json({ message: 'Not found.' });
+      return;
+    }
+    res.json(candidate);
+  }),
+);
+
+authorizedRouter.patch(
+  '/api/candidate/:candidateId',
+  wrap(async (req, res) => {
+    const { candidateId } = req.params;
+    const ownerId = req.user.sub;
+    let candidate = await candidateStore.get({ id: candidateId, ownerId });
+    if (!candidate) {
+      res.status(404);
+      res.json({ message: 'Not found.' });
+      return;
+    }
+    delete req.body.id;
+    delete req.body.ownerId;
+    candidate = Object.assign(candidate, req.body);
+    await candidateStore.update(candidate);
+    console.log(`Put ${candidate.id}`);
+    res.json(candidate);
   }),
 );
 
 authorizedRouter.delete(
-  '/api/candidate/:calendarId',
+  '/api/candidate/:candidateId',
   wrap(async (req, res) => {
-    const { calendarId } = req.params;
+    const { candidateId } = req.params;
     const ownerId = req.user.sub;
-    const calendar = await deleteCandidate(ownerId, calendarId);
-    console.log(`Delete ${calendar.id}`);
-    res.json(calendar);
+    let candidate = await candidateStore.get({ id: candidateId, ownerId });
+    if (!candidate) {
+      res.status(404);
+      res.json({ message: 'Not found.' });
+      return;
+    }
+    await candidateStore.delete({ id: candidateId, ownerId });
+    console.log(candidate);
+    console.log(`Delete ${candidate.id}`);
+    res.json(candidate);
   }),
 );
 
@@ -101,26 +115,24 @@ authorizedRouter.get(
 
 app.use(authorizedRouter);
 
+// Calendars
+
 app.get(
-  '/api/calendar/anonymous/:anonymousAccessToken',
+  '/api/calendar/:calendarId',
   wrap(async (req, res) => {
-    const { anonymousAccessToken } = req.params;
-    const calendar = await getAvailabilityCalendarByAccessToken(
-      anonymousAccessToken,
-    );
+    const { calendarId } = req.params;
+    const calendar = await getAvailabilityCalendarByAccessToken(calendarId);
     console.log(`Anon Get ${calendar.id}`);
     res.json(calendar);
   }),
 );
 
 app.put(
-  '/api/calendar/anonymous/:anonymousAccessToken',
+  '/api/calendar/:calendarId',
   wrap(async (req, res) => {
-    const { anonymousAccessToken } = req.params;
+    const { calendarId } = req.params;
     const changedCalendar = req.body;
-    let calendar = await getAvailabilityCalendarByAccessToken(
-      anonymousAccessToken,
-    );
+    let calendar = await getAvailabilityCalendarByAccessToken(calendarId);
     if (!calendar) {
       res.status(404).json({ message: 'Invalid access token' });
     }
