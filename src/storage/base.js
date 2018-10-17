@@ -34,8 +34,6 @@ class Table {
   }
 
   async get(key) {
-    console.log(key);
-    console.log(this.tableName);
     return (await this.docClient
       .get({ TableName: this.tableName, Key: key })
       .promise()).Item;

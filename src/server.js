@@ -8,6 +8,9 @@ require('dotenv').config();
 
 const app = express();
 
+app.use(express.static('frontend/build'));
+app.use(express.json());
+
 const jwtOptions = {
   secret: jwks.expressJwtSecret({
     cache: true,
@@ -27,9 +30,6 @@ if (process.env['DISABLE_JWT_EXPIRY']) {
 
 let jwtCheck = jwt(jwtOptions);
 
-app.use(express.static('frontend/build'));
-app.use(express.json());
-
 var authorizedRouter = express.Router();
 authorizedRouter.use(jwtCheck);
 
@@ -46,6 +46,8 @@ authorizedRouter.post(
   wrap(async (req, res) => {
     let candidate = req.body;
     candidate.ownerId = req.user.sub;
+    const calendar = { dates: [] };
+    candidate.calendarId = (await calendarStore.create(calendar)).id;
     candidate = await candidateStore.create(candidate);
     console.log(`Created candidate ${candidate.id}`);
     res.json(candidate);
@@ -113,37 +115,38 @@ authorizedRouter.get(
   }),
 );
 
-app.use(authorizedRouter);
-
 // Calendars
 
 app.get(
   '/api/calendar/:calendarId',
   wrap(async (req, res) => {
     const { calendarId } = req.params;
-    const calendar = await getAvailabilityCalendarByAccessToken(calendarId);
+    const calendar = await calendarStore.get({ id: calendarId });
     console.log(`Anon Get ${calendar.id}`);
     res.json(calendar);
   }),
 );
 
-app.put(
+app.patch(
   '/api/calendar/:calendarId',
   wrap(async (req, res) => {
     const { calendarId } = req.params;
-    const changedCalendar = req.body;
-    let calendar = await getAvailabilityCalendarByAccessToken(calendarId);
+
+    let calendar = await calendarStore.get({ id: calendarId });
     if (!calendar) {
-      res.status(404).json({ message: 'Invalid access token' });
+      res.status(404);
+      res.json({ message: 'Not found.' });
+      return;
     }
-    calendar.dates = changedCalendar.dates;
-
-    calendar = await putCandidate(calendar.ownerId, calendar);
-
+    delete req.body.id;
+    calendar = Object.assign(calendar, req.body);
+    await calendarStore.update(calendar);
     console.log(`Anon Update ${calendar.id}`);
     res.json(calendar);
   }),
 );
+
+app.use(authorizedRouter);
 
 console.log('Starting on port 4000');
 app.listen(4000);
